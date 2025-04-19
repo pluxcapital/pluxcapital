@@ -1,4 +1,5 @@
 import streamlit as st
+import requests
 
 st.set_page_config(
     page_title="Asesor AP Automatizado",
@@ -26,6 +27,42 @@ with st.expander("ℹ️ ¿Cómo funciona este sistema?"):
     - Exclusivamente instrumentos autorizados por BYMA  
     - Actualización diaria de parámetros de riesgo  
     """)
+
+def analisis_macro_perplexity():
+    st.subheader("🔎 Análisis macroeconómico automático")
+    consulta = "¿Cuál es el panorama macroeconómico para el mercado financiero argentino en los próximos 6 meses? Responde en 4 líneas."
+    
+    # Manejo seguro de secretos para ambos entornos
+    try:
+        api_key = st.secrets["PPLX_API_KEY"]
+    except (KeyError, FileNotFoundError):
+        api_key = st.text_input("Ingresa tu clave de Perplexity API para continuar:", type="password")
+        if not api_key:
+            st.warning("Se requiere una clave API para usar esta función. En producción, esta clave se configura automáticamente.")
+            return
+
+    response = requests.post(
+        "https://api.perplexity.ai/chat/completions",
+        headers={
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json"
+        },
+        json={
+            "model": "sonar-pro",  # o "pplx-7b-online"
+            "messages": [
+                {"role": "user", "content": consulta}
+            ]
+        }
+    )
+    if response.status_code == 200:
+        data = response.json()
+        resumen = data['choices'][0]['message']['content']
+        st.info(resumen)
+    else:
+        st.error("No se pudo obtener el análisis automático.")
+
+# Llama a la función donde lo necesites en tu app principal
+analisis_macro_perplexity()
 
 def generar_recomendacion(perfil):
     estrategia = {
